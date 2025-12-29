@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>NotificationCenter</title>
+</head>
+<body>
+    <div id="NotificationCenterConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="NotificationCenterConfigForm">
+                    <div class="inputContainer">
+                        <input id="retentionDays" name="retentionDays" type="number" min="1" max="365" is="emby-input" label="Retention Days:" value="7">
+                        <div class="fieldDescription">Number of days to keep notifications before cleanup (default: 7)</div>
+                    </div>
+
+                    <h2>Notification Levels by Media Type</h2>
+                    <div class="fieldDescription" style="margin-bottom: 20px;">
+                        <strong>Disabled:</strong> No notifications<br>
+                        <strong>Level 1 (All):</strong> All new media additions<br>
+                        <strong>Level 2 (Relevant):</strong> Matching user history (watched series, favorite genres)<br>
+                        <strong>Level 3 (Highly Relevant):</strong> Currently watching series or strong genre matches
+                    </div>
+
+                    <div class="selectContainer" style="margin-bottom: 20px;">
+                        <select id="movieLevel" is="emby-select" label="Movies:">
+                            <option value="0">Disabled</option>
+                            <option value="1">Level 1 (All)</option>
+                            <option value="2">Level 2 (Relevant)</option>
+                            <option value="3">Level 3 (Highly Relevant)</option>
+                        </select>
+                        <div class="fieldDescription">Level 2: Genre matches (3+ movies watched). Level 3: Multiple genre matches (2+)</div>
+                    </div>
+
+                    <div class="selectContainer" style="margin-bottom: 20px;">
+                        <select id="seriesLevel" is="emby-select" label="TV Series (Episodes & Seasons):">
+                            <option value="0">Disabled</option>
+                            <option value="1">Level 1 (All)</option>
+                            <option value="2">Level 2 (Relevant)</option>
+                            <option value="3">Level 3 (Highly Relevant)</option>
+                        </select>
+                        <div class="fieldDescription">Level 2: Series already watched. Level 3: Currently watching (in-progress)</div>
+                    </div>
+
+                    <div class="selectContainer" style="margin-bottom: 20px;">
+                        <select id="musicLevel" is="emby-select" label="Music Albums:">
+                            <option value="0">Disabled</option>
+                            <option value="1">Level 1 (All)</option>
+                            <option value="2">Level 2 (Relevant)</option>
+                            <option value="3">Level 3 (Highly Relevant)</option>
+                        </select>
+                        <div class="fieldDescription">Music notifications (currently simple all-or-nothing)</div>
+                    </div>
+
+                    <div class="selectContainer" style="margin-bottom: 20px;">
+                        <select id="bookLevel" is="emby-select" label="Books:">
+                            <option value="0">Disabled</option>
+                            <option value="1">Level 1 (All)</option>
+                            <option value="2">Level 2 (Relevant)</option>
+                            <option value="3">Level 3 (Highly Relevant)</option>
+                        </select>
+                        <div class="fieldDescription">Book notifications (currently simple all-or-nothing)</div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            var NotificationCenterConfig = {
+                pluginUniqueId: 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1'
+            };
+
+            // Map enum names to numeric values
+            var NotificationLevelMap = {
+                'Disabled': 0,
+                'All': 1,
+                'Relevant': 2,
+                'HighlyRelevant': 3
+            };
+
+            function parseLevel(value) {
+                if (typeof value === 'string') {
+                    return NotificationLevelMap[value] !== undefined ? NotificationLevelMap[value] : 1;
+                }
+                return value !== undefined ? value : 1;
+            }
+
+            document.getElementById('NotificationCenterConfigPage').addEventListener('pageshow', function() {
+                Dashboard.showLoadingMsg();
+                
+                ApiClient.getPluginConfiguration(NotificationCenterConfig.pluginUniqueId).then(function(config) {
+                    console.log('Loaded config:', config);
+                    
+                    document.getElementById('retentionDays').value = config.RetentionDays || 7;
+                    document.getElementById('movieLevel').value = parseLevel(config.MovieNotificationLevel);
+                    document.getElementById('seriesLevel').value = parseLevel(config.SeriesNotificationLevel);
+                    document.getElementById('musicLevel').value = parseLevel(config.MusicNotificationLevel);
+                    document.getElementById('bookLevel').value = parseLevel(config.BookNotificationLevel);
+
+                    console.log('Set values:', {
+                        retentionDays: document.getElementById('retentionDays').value,
+                        movieLevel: document.getElementById('movieLevel').value,
+                        seriesLevel: document.getElementById('seriesLevel').value,
+                        musicLevel: document.getElementById('musicLevel').value,
+                        bookLevel: document.getElementById('bookLevel').value
+                    });
+
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+            document.getElementById('NotificationCenterConfigForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(NotificationCenterConfig.pluginUniqueId).then(function(config) {
+                    config.RetentionDays = parseInt(document.getElementById('retentionDays').value) || 7;
+                    config.MovieNotificationLevel = parseInt(document.getElementById('movieLevel').value);
+                    config.SeriesNotificationLevel = parseInt(document.getElementById('seriesLevel').value);
+                    config.MusicNotificationLevel = parseInt(document.getElementById('musicLevel').value);
+                    config.BookNotificationLevel = parseInt(document.getElementById('bookLevel').value);
+
+                    console.log('Saving config:', config);
+
+                    ApiClient.updatePluginConfiguration(NotificationCenterConfig.pluginUniqueId, config).then(function() {
+                        console.log('Config saved successfully');
+                        Dashboard.processPluginConfigurationUpdateResult();
+                    });
+                });
+
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>
