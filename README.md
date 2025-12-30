@@ -12,7 +12,7 @@ Smart notifications for new media with intelligent filtering based on watch hist
 
 Add repository in Jellyfin:
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/jellyfin-plugin-notificationcenter/main/manifest.json
+https://raw.githubusercontent.com/gravity-zero/NotificationCenter/master/manifest.json
 ```
 
 ## Configuration (For all Users)
