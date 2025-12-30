@@ -19,6 +19,7 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
     private readonly IUserDataManager _userDataManager;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MediaAddedHandler _mediaAddedHandler;
+    private readonly ScriptInjector _scriptInjector;
 
     public NotificationCenterPlugin(
         IApplicationPaths applicationPaths,
@@ -45,6 +46,10 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
             _userDataManager,
             Repository,
             _loggerFactory);
+
+        // Inject client script on startup
+        _scriptInjector = new ScriptInjector(loggerFactory.CreateLogger<ScriptInjector>());
+        _scriptInjector.InjectScript();
     }
 
     public override string Name => "NotificationCenter";
@@ -65,4 +70,5 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
             }
         };
     }
+
 }

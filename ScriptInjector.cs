@@ -13,10 +13,48 @@ public class ScriptInjector
     private readonly string _indexHtmlPath;
     private const string ScriptTag = "<script src=\"/NotificationCenter/client.js\" defer></script>";
 
-    public ScriptInjector(string webPath, ILogger<ScriptInjector> logger)
+    public ScriptInjector(ILogger<ScriptInjector> logger)
     {
         _logger = logger;
-        _indexHtmlPath = Path.Combine(webPath, "index.html");
+        _indexHtmlPath = GetIndexHtmlPath();
+    }
+
+    /// <summary>
+    /// Determines the correct path to index.html across different installation types.
+    /// </summary>
+    private string GetIndexHtmlPath()
+    {
+        // Try multiple common paths
+        var possiblePaths = new[]
+        {
+            // Docker path
+            "/jellyfin/jellyfin-web/index.html",
+            
+            // Linux paths
+            "/usr/share/jellyfin/web/index.html",
+            "/usr/lib/jellyfin/bin/jellyfin-web/index.html",
+            
+            // Relative to application directory (works for Windows and Linux)
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "jellyfin-web", "index.html"),
+            
+            // Windows typical path
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Jellyfin", "Server", "jellyfin-web", "index.html"
+            )
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            if (File.Exists(path))
+            {
+                _logger.LogInformation("Found index.html at {Path}", path);
+                return path;
+            }
+        }
+
+        _logger.LogWarning("index.html not found in any expected location. Defaulting to Docker path.");
+        return "/jellyfin/jellyfin-web/index.html";
     }
 
     /// <summary>
@@ -46,7 +84,7 @@ public class ScriptInjector
             {
                 contents = contents.Replace("</body>", $"{ScriptTag}\n</body>");
                 File.WriteAllText(_indexHtmlPath, contents);
-                _logger.LogInformation("Successfully injected notification client script into index.html");
+                _logger.LogInformation("Successfully injected notification client script into index.html at {Path}", _indexHtmlPath);
             }
             else
             {
@@ -55,7 +93,7 @@ public class ScriptInjector
         }
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogError(ex, "Permission denied writing to index.html. In Docker, map index.html as volume.");
+            _logger.LogError(ex, "Permission denied writing to {Path}. The web server may need write access.", _indexHtmlPath);
         }
         catch (Exception ex)
         {
