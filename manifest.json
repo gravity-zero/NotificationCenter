@@ -12,7 +12,7 @@
         "changelog": "Add i18n support via server locale, seed dev tooling via OMDB API",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/gravity-zero/NotificationCenter/releases/download/v1.1.0/NotificationCenter-v1.1.0.0.zip",
-        "checksum": "0b0965f0c73f93b74e72fc879de9953a",
+        "checksum": "7cec3857177a73ea455846939eac4bbf",
         "timestamp": "2026-02-15T00:00:00Z"
       },
       {
