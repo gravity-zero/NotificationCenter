@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.NotificationCenter;
 
-public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
+public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 {
     private readonly ILibraryManager _libraryManager;
     private readonly IUserManager _userManager;
@@ -68,5 +68,11 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
                     GetType().Namespace + ".Configuration.configPage.html"
             }
         };
+    }
+
+    public void Dispose()
+    {
+        _mediaAddedHandler.Dispose();
+        Repository.Dispose();
     }
 }

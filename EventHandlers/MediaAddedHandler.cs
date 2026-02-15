@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.NotificationCenter.EventHandlers;
 
-public class MediaAddedHandler
+public class MediaAddedHandler : IDisposable
 {
     private readonly ILibraryManager _libraryManager;
     private readonly IUserManager _userManager;
@@ -284,10 +284,15 @@ public class MediaAddedHandler
             .Where(kvp => kvp.Value < cutoff)
             .Select(kvp => kvp.Key)
             .ToList();
-            
+
         foreach (var key in toRemove)
         {
             _recentSeriesNotifications.TryRemove(key, out _);
         }
+    }
+
+    public void Dispose()
+    {
+        _libraryManager.ItemAdded -= OnItemAdded;
     }
 }
