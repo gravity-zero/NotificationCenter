@@ -7,6 +7,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +20,6 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
     private readonly IUserDataManager _userDataManager;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MediaAddedHandler _mediaAddedHandler;
-    private readonly ScriptInjector _scriptInjector;
 
     public NotificationCenterPlugin(
         IApplicationPaths applicationPaths,
@@ -27,6 +27,7 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
         ILibraryManager libraryManager,
         IUserManager userManager,
         IUserDataManager userDataManager,
+        ILocalizationManager localizationManager,
         ILoggerFactory loggerFactory)
         : base(applicationPaths, xmlSerializer)
     {
@@ -45,18 +46,15 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
             _userManager,
             _userDataManager,
             Repository,
+            localizationManager,
             _loggerFactory);
-
-        // Inject client script on startup
-        _scriptInjector = new ScriptInjector(loggerFactory.CreateLogger<ScriptInjector>());
-        _scriptInjector.InjectScript();
     }
 
     public override string Name => "NotificationCenter";
     public override Guid Id => Guid.Parse("eb5d7894-8eef-4b36-aa6f-5d124e828ce1");
 
     public static NotificationCenterPlugin? Instance { get; private set; }
-    
+
     public NotificationRepository Repository { get; }
 
     public IEnumerable<PluginPageInfo> GetPages()
@@ -66,9 +64,9 @@ public class NotificationCenterPlugin : BasePlugin<PluginConfiguration>, IHasWeb
             new PluginPageInfo
             {
                 Name = Name,
-                EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+                EmbeddedResourcePath =
+                    GetType().Namespace + ".Configuration.configPage.html"
             }
         };
     }
-
 }

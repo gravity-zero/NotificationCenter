@@ -12,6 +12,7 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Globalization;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.NotificationCenter.EventHandlers;
@@ -23,8 +24,9 @@ public class MediaAddedHandler
     private readonly IUserDataManager _userDataManager;
     private readonly NotificationRepository _repository;
     private readonly ILogger<MediaAddedHandler> _logger;
+    private readonly ILocalizationManager _localizationManager;
     private readonly UserHistoryAnalyzer _historyAnalyzer;
-    
+
     private readonly ConcurrentDictionary<Guid, DateTime> _recentSeriesNotifications = new();
     private readonly TimeSpan _deduplicationWindow = TimeSpan.FromMinutes(5);
 
@@ -33,12 +35,14 @@ public class MediaAddedHandler
         IUserManager userManager,
         IUserDataManager userDataManager,
         NotificationRepository repository,
+        ILocalizationManager localizationManager,
         ILoggerFactory loggerFactory)
     {
         _libraryManager = libraryManager;
         _userManager = userManager;
         _userDataManager = userDataManager;
         _repository = repository;
+        _localizationManager = localizationManager;
         _logger = loggerFactory.CreateLogger<MediaAddedHandler>();
         _historyAnalyzer = new UserHistoryAnalyzer(
             userDataManager,
@@ -83,81 +87,84 @@ public class MediaAddedHandler
                 case Movie movie:
                     notificationLevel = config.MovieNotificationLevel;
                     if (notificationLevel == NotificationLevel.Disabled) return;
-                    
+
                     notificationType = NotificationType.NewMovie;
-                    title = $"New Movie: {movie.Name}";
-                    message = $"{movie.Name} ({movie.ProductionYear ?? 0}) has been added to the library.";
+                    title = movie.Name;
+                    message = string.Format(_localizationManager.GetLocalizedString("ItemAddedWithName"), movie.Name);
                     break;
 
                 case Episode episode:
                     notificationLevel = config.SeriesNotificationLevel;
                     if (notificationLevel == NotificationLevel.Disabled) return;
-                    
+
                     var series = episode.Series;
                     if (series == null)
                     {
                         _logger.LogWarning("Episode {EpisodeName} has no series linked", episode.Name);
                         return;
                     }
-                    
+
                     var seriesName = series.Name;
                     var seasonNum = episode.ParentIndexNumber ?? 0;
                     var episodeNum = episode.IndexNumber ?? 0;
-                    
+
                     if (IsRecentSeriesNotification(series.Id))
                     {
                         _logger.LogDebug("Skipping notification for {SeriesName} - recent bulk add", seriesName);
                         return;
                     }
-                    
+
                     notificationType = NotificationType.NewEpisode;
-                    title = $"New Episode: {seriesName}";
-                    message = $"{seriesName} S{seasonNum:00}E{episodeNum:00} - {episode.Name} has been added.";
-                    
+                    var episodeLabel = $"{seriesName} S{seasonNum:00}E{episodeNum:00} - {episode.Name}";
+                    title = seriesName;
+                    message = string.Format(_localizationManager.GetLocalizedString("ItemAddedWithName"), episodeLabel);
+
                     _recentSeriesNotifications[series.Id] = DateTime.UtcNow;
                     break;
 
                 case Season season:
                     notificationLevel = config.SeriesNotificationLevel;
                     if (notificationLevel == NotificationLevel.Disabled) return;
-                    
+
                     var seasonSeries = season.Series;
                     if (seasonSeries == null)
                     {
                         _logger.LogWarning("Season has no series linked");
                         return;
                     }
-                    
+
                     if (season.Name?.Contains("Unknown") == true)
                     {
                         _logger.LogDebug("Skipping temporary/unknown season");
                         return;
                     }
-                    
+
                     var seasonSeriesName = seasonSeries.Name;
                     var seasonIndex = season.IndexNumber ?? 0;
-                    
+
                     if (IsRecentSeriesNotification(seasonSeries.Id))
                     {
                         _logger.LogDebug("Skipping season notification - recent bulk add");
                         return;
                     }
-                    
+
                     notificationType = NotificationType.NewSeason;
-                    title = $"New Season: {seasonSeriesName}";
-                    message = $"{seasonSeriesName} Season {seasonIndex} has been added to the library.";
-                    
+                    var seasonLabel = $"{seasonSeriesName} Season {seasonIndex}";
+                    title = seasonSeriesName;
+                    message = string.Format(_localizationManager.GetLocalizedString("ItemAddedWithName"), seasonLabel);
+
                     _recentSeriesNotifications[seasonSeries.Id] = DateTime.UtcNow;
                     break;
 
                 case MusicAlbum album:
                     notificationLevel = config.MusicNotificationLevel;
                     if (notificationLevel == NotificationLevel.Disabled) return;
-                    
+
                     var artist = album.AlbumArtists?.FirstOrDefault() ?? "Unknown Artist";
                     notificationType = NotificationType.NewAlbum;
-                    title = $"New Album: {album.Name}";
-                    message = $"{artist} - {album.Name} ({album.ProductionYear ?? 0}) has been added.";
+                    var albumLabel = $"{artist} - {album.Name}";
+                    title = album.Name;
+                    message = string.Format(_localizationManager.GetLocalizedString("ItemAddedWithName"), albumLabel);
                     break;
             }
 

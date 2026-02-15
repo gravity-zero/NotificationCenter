@@ -7,15 +7,22 @@
     <Nullable>enable</Nullable>
     <AnalysisMode>None</AnalysisMode>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NotificationCenter.Tests" />
+  </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.5" >
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.6" >
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Jellyfin.Model" Version="10.11.5">
+    <PackageReference Include="Jellyfin.Model" Version="10.11.6">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
   
   <ItemGroup>

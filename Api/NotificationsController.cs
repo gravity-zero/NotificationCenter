@@ -92,6 +92,35 @@ public class NotificationsController : ControllerBase
         }
     }
 
+    [HttpPost("seed")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [Authorize(Policy = "RequiresElevation")]
+    public async Task<ActionResult> SeedNotification([FromBody] SeedNotificationRequest request)
+    {
+        var repository = NotificationCenterPlugin.Instance?.Repository;
+        if (repository == null)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "Jellyfin-UserId");
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized();
+
+        var notification = new Notification
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Type = request.Type,
+            Title = request.Title,
+            Message = request.Message,
+            ItemId = null,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        };
+
+        await repository.CreateNotificationAsync(notification);
+        return StatusCode(StatusCodes.Status201Created, notification.Id);
+    }
+
     /// <summary>
     /// Gets the count of unread notifications for the current user.
     /// </summary>
@@ -123,4 +152,11 @@ public class NotificationsController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "Error getting unread count");
         }
     }
+}
+
+public class SeedNotificationRequest
+{
+    public required string Title { get; set; }
+    public required string Message { get; set; }
+    public NotificationType Type { get; set; } = NotificationType.NewMovie;
 }
